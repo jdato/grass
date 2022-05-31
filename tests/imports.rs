@@ -1,5 +1,7 @@
 use std::io::Write;
 
+use tempfile::tempdir;
+
 #[macro_use]
 mod macros;
 
@@ -162,6 +164,24 @@ fn chained_imports_in_directory() {
     assert_eq!(
         "a {\n  color: red;\n}\n",
         &grass::from_string(input.to_string(), &grass::Options::default()).expect(input)
+    );
+}
+
+#[test]
+fn import_from_path_dir_not_relative() {
+    std::fs::create_dir_all("tmp_scss").unwrap_or(());
+    std::fs::create_dir_all("tmp_my/susy").unwrap_or(());
+
+    tempfile!("tmp_scss/main.scss", "@import \"susy\";\na {\n color: $a;\n}");
+    tempfile!("tmp_my/susy/susy.scss", "$a: red;");
+    
+    // not relative dir
+    assert_eq!(
+        "a {\n  color: red;\n}\n",
+        grass::from_path(
+            "tmp_scss/main.scss",
+            &grass::Options::default().load_path(std::path::Path::new("tmp_my/susy"))
+        ).expect("file")
     );
 }
 
